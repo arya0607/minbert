@@ -55,8 +55,8 @@ class AdamW(Optimizer):
                 if not state:
                     # since state is empty dictionary, we need to initiliaze with
                     # the necessary keys and values like moment_one, moment_two, and time
-                    state['m1'] = torch.zeros(data.size())
-                    state['m2'] = torch.zeros(data.size())
+                    state['m1'] = 0
+                    state['m2'] = 0
                     state['time'] = 0
                 state['m1'] = (state['m1'] * b1) + (grad * (1 - b1))
                 state['m2'] = (state['m2'] * b2) + ((grad ** 2) * (1 - b2))
