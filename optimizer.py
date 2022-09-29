@@ -1,5 +1,4 @@
 from typing import Callable, Iterable, Tuple
-
 import torch
 from torch.optim import Optimizer
 
@@ -15,14 +14,19 @@ class AdamW(Optimizer):
             correct_bias: bool = True,
     ):
         if lr < 0.0:
-            raise ValueError("Invalid learning rate: {} - should be >= 0.0".format(lr))
+            raise ValueError(
+                "Invalid learning rate: {} - should be >= 0.0".format(lr))
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError("Invalid beta parameter: {} - should be in [0.0, 1.0[".format(betas[0]))
+            raise ValueError(
+                "Invalid beta parameter: {} - should be in [0.0, 1.0[".format(betas[0]))
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError("Invalid beta parameter: {} - should be in [0.0, 1.0[".format(betas[1]))
+            raise ValueError(
+                "Invalid beta parameter: {} - should be in [0.0, 1.0[".format(betas[1]))
         if not 0.0 <= eps:
-            raise ValueError("Invalid epsilon value: {} - should be >= 0.0".format(eps))
-        defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay, correct_bias=correct_bias)
+            raise ValueError(
+                "Invalid epsilon value: {} - should be >= 0.0".format(eps))
+        defaults = dict(lr=lr, betas=betas, eps=eps,
+                        weight_decay=weight_decay, correct_bias=correct_bias)
         super().__init__(params, defaults)
 
     def step(self, closure: Callable = None):
@@ -36,10 +40,11 @@ class AdamW(Optimizer):
                     continue
                 grad = p.grad.data
                 if grad.is_sparse:
-                    raise RuntimeError("Adam does not support sparse gradients, please consider SparseAdam instead")
+                    raise RuntimeError(
+                        "Adam does not support sparse gradients, please consider SparseAdam instead")
 
-                raise NotImplementedError()
-
+                (b1, b2) = group['betas']
+                data = p.data
                 # State should be stored in this dictionary
                 state = self.state[p]
 
@@ -47,14 +52,27 @@ class AdamW(Optimizer):
                 alpha = group["lr"]
 
                 # Update first and second moments of the gradients
-
+                if not state:
+                    # since state is empty dictionary, we need to initiliaze with
+                    # the necessary keys and values like moment_one, moment_two, and time
+                    state['m1'] = torch.zeros(data.size())
+                    state['m2'] = torch.zeros(data.size())
+                    state['time'] = 0
+                state['m1'] = (state['m1'] * b1) + (grad * (1 - b1))
+                state['m2'] = (state['m2'] * b2) + ((grad ** 2) * (1 - b2))
+                state['time'] = state['time'] + 1
                 # Bias correction
                 # Please note that we are using the "efficient version" given in
                 # https://arxiv.org/abs/1412.6980
-
+                more_efficient_alpha = alpha * \
+                    ((1 - (b2 ** state["time"])) ** 0.5) / \
+                    (1 - (b1 ** state["time"]))
+                moment_subtract = more_efficient_alpha * \
+                    state["m1"] / ((state["m2"] ** 0.5) + group["eps"])
+                weight_decay = (alpha * group['weight_decay'] * data)
+                p.data = (data - moment_subtract) - weight_decay
                 # Update parameters
 
                 # Add weight decay after the main gradient-based updates.
                 # Please note that the learning rate should be incorporated into this update.
-
         return loss
