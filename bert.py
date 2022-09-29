@@ -118,14 +118,11 @@ class BertLayer(nn.Module):
         # todo
         # multi-head attention w/ self.self_attention
         attention = self.self_attention(hidden_states, attention_mask)
-        print(attention.shape)
         # add-norm layer
-        print('first')
         add_norm = self.add_norm(
             hidden_states, attention, self.attention_dense, self.attention_dropout, self.attention_layer_norm)
         # feed forward
         feed = self.interm_af(self.interm_dense(add_norm))
-        print('hello')
         # another add-norm layer
 
         return self.add_norm(add_norm, feed, self.out_dense,
